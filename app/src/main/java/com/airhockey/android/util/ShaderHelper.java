@@ -101,4 +101,20 @@ public class ShaderHelper {
 
         return programObjectId;
     }
+
+    /**
+     *
+     * @param programObjectId Program id.
+     * @return Status of OpenGL program validation.
+     */
+    public static boolean validateProgram(int programObjectId) {
+        GLES20.glValidateProgram(programObjectId);
+
+        final int[] validateStatus = new int[1];
+        GLES20.glGetProgramiv(programObjectId, GLES20.GL_VALIDATE_STATUS, validateStatus, 0);
+
+        LOGV(TAG, "Results of validating program: " + validateStatus[0] + "\nLog:" + GLES20.glGetProgramInfoLog(programObjectId));
+
+        return validateStatus[0] != 0;
+    }
 }
