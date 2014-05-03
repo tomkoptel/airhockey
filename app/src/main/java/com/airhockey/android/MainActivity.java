@@ -1,4 +1,4 @@
-package com.example.firstopenglformat.app;
+package com.airhockey.android;
 
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -20,7 +20,7 @@ public class MainActivity extends ActionBarActivity {
         glSurfaceView.setEGLContextClientVersion(2);
 
         // Assign our renderer.
-        glSurfaceView.setRenderer(new FirstOpenGLProjectRenderer());
+        glSurfaceView.setRenderer(new AirHockeyRenderer());
         renderSet = true;
         setContentView(glSurfaceView);
     }
