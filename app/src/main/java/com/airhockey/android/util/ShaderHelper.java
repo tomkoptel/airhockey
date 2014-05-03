@@ -3,6 +3,7 @@ package com.airhockey.android.util;
 import android.opengl.GLES20;
 
 import static com.airhockey.android.util.LogUtils.LOGI;
+import static com.airhockey.android.util.LogUtils.LOGV;
 import static com.airhockey.android.util.LogUtils.LOGW;
 import static com.airhockey.android.util.LogUtils.makeLogTag;
 
@@ -66,5 +67,38 @@ public class ShaderHelper {
         }
 
         return shaderObjectId;
+    }
+
+    /**
+     * Creates and links program with loaded shaders.
+     * @param vertexShaderId Vertex shader id.
+     * @param fragmentShaderId Fragment shader id.
+     * @return If program linked successfully returns its id.
+     */
+    public static int linkProgram(int vertexShaderId, int fragmentShaderId) {
+        final int programObjectId = GLES20.glCreateProgram();
+        if (programObjectId == 0) {
+            LOGW(TAG, "Could not create new program");
+            return 0;
+        }
+
+        GLES20.glAttachShader(programObjectId, vertexShaderId);
+        GLES20.glAttachShader(programObjectId, fragmentShaderId);
+
+        GLES20.glLinkProgram(programObjectId);
+
+        final int[] linkStatus = new int[1];
+        GLES20.glGetProgramiv(programObjectId, GLES20.GL_LINK_STATUS, linkStatus, 0);
+
+        LOGV(TAG, "Results of linking program:\n"
+                + GLES20.glGetProgramInfoLog(programObjectId));
+
+        if (linkStatus[0] == 0) {
+            GLES20.glDeleteProgram(programObjectId);
+            LOGW(TAG, "Linking of program failed.");
+            return 0;
+        }
+
+        return programObjectId;
     }
 }
