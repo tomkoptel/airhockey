@@ -1,7 +1,11 @@
 package com.airhockey.android;
 
+import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+
+import com.airhockey.android.util.ShaderHelper;
+import com.airhockey.android.util.TextResourceReader;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -14,6 +18,7 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
     private static final int POSITION_COMPONENT_COUNT = 2;
     private static final int BYTES_PER_FLOAT = 4;
     private final FloatBuffer verterxData;
+    private final Context mContext;
 
     private float[] tableVertices = {
             // Triangle 1
@@ -35,7 +40,8 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
             4.5f, 12f,
     };
 
-    public AirHockeyRenderer() {
+    public AirHockeyRenderer(Context context) {
+        this.mContext = context;
         this.verterxData = ByteBuffer
                 .allocateDirect(tableVertices.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder())
@@ -46,6 +52,12 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        String vertexShaderSource = TextResourceReader
+                .readTextFileFromResource(mContext, R.raw.simple_vertex_shader);
+        String fragmentShaderSource = TextResourceReader
+                .readTextFileFromResource(mContext, R.raw.simple_fragment_shader);
+        int vertexShader = ShaderHelper.compileVertexShader(vertexShaderSource);
+        int fragmentShader = ShaderHelper.compileFragmentShader(vertexShaderSource);
     }
 
     @Override

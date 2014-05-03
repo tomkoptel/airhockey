@@ -20,7 +20,7 @@ public class MainActivity extends ActionBarActivity {
         glSurfaceView.setEGLContextClientVersion(2);
 
         // Assign our renderer.
-        glSurfaceView.setRenderer(new AirHockeyRenderer());
+        glSurfaceView.setRenderer(new AirHockeyRenderer(this));
         renderSet = true;
         setContentView(glSurfaceView);
     }
