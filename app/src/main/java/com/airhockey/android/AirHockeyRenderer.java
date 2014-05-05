@@ -3,6 +3,7 @@ package com.airhockey.android;
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
 
 import com.airhockey.android.util.ShaderHelper;
 import com.airhockey.android.util.TextResourceReader;
@@ -23,30 +24,33 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
 
     private static final String A_COLOR = "a_Color";
     private static final String A_POSITION = "a_Position";
+    private static final String U_MATRIX = "u_Matrix";
 
     private final FloatBuffer verterxData;
     private final Context mContext;
     private int program;
     private int aColorLocation;
     private int aPositionLocation;
+    private int uMatrixLocation;
 
-    float[] tableVerticesWithTriangles = {
+    private final float[] projectionMatrix = new float[16];
+    private final float[] tableVerticesWithTriangles = {
             // Order of coordinates: X, Y, R, G, B
             // Triangle Fan
             0f, 0f, 1f, 1f, 1f,
-            -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-            0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-            0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-            -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-            -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
+            -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+            0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+            0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+            -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+            -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
 
             // Line 1
             -0.5f, 0f, 1f, 0f, 0f,
             0.5f, 0f, 1f, 0f, 0f,
 
             // Mallets
-            0f, -0.25f, 0f, 0f, 1f,
-            0f, 0.25f, 1f, 0f, 0f
+            0f, -0.4f, 0f, 0f, 1f,
+            0f, 0.4f, 1f, 0f, 0f
     };
 
     public AirHockeyRenderer(Context context) {
@@ -77,6 +81,7 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
 
         aColorLocation = GLES20.glGetAttribLocation(program, A_COLOR);
         aPositionLocation = GLES20.glGetAttribLocation(program, A_POSITION);
+        uMatrixLocation = GLES20.glGetUniformLocation(program, U_MATRIX);
 
         verterxData.position(0);
         GLES20.glVertexAttribPointer(aPositionLocation, POSITION_COMPONENT_COUNT,
@@ -93,12 +98,24 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         // Set the OpengGL viewport to fill the entire surface.
         GLES20.glViewport(0, 0, width, height);
+
+        final float aspectRatio = width > height ?
+                (float) width / (float) height : (float) height / (float) width;
+        if (width > height) {
+            // Landscape
+            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f);
+        } else {
+            // Portrait or square
+            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f);
+        }
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         // Clear the rendering surface.
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        // Apply Projection matrix.
+        GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
 
         // Draw board.
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 6);
