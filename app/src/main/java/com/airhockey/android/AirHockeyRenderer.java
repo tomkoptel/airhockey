@@ -5,6 +5,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.airhockey.android.util.MatrixHelper;
 import com.airhockey.android.util.ShaderHelper;
 import com.airhockey.android.util.TextResourceReader;
 
@@ -34,6 +35,7 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
     private int uMatrixLocation;
 
     private final float[] projectionMatrix = new float[16];
+    private final float[] modelMatrix = new float[16];
     private final float[] tableVerticesWithTriangles = {
             // Order of coordinates: X, Y, R, G, B
             // Triangle Fan
@@ -99,15 +101,16 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
         // Set the OpengGL viewport to fill the entire surface.
         GLES20.glViewport(0, 0, width, height);
 
-        final float aspectRatio = width > height ?
-                (float) width / (float) height : (float) height / (float) width;
-        if (width > height) {
-            // Landscape
-            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f);
-        } else {
-            // Portrait or square
-            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f);
-        }
+        MatrixHelper.perspectiveM(projectionMatrix, 45,
+                (float) width / (float) height, 1f, 10f);
+
+        Matrix.setIdentityM(modelMatrix, 0);
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
+        Matrix.rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f);
+
+        final float[] temp = new float[16];
+        Matrix.multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
+        System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
     }
 
     @Override
