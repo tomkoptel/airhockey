@@ -5,104 +5,54 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import com.airhockey.android.objects.Mallet;
+import com.airhockey.android.objects.Table;
+import com.airhockey.android.programs.ColorShaderProgram;
+import com.airhockey.android.programs.TextureShaderProgram;
 import com.airhockey.android.util.MatrixHelper;
-import com.airhockey.android.util.ShaderHelper;
-import com.airhockey.android.util.TextResourceReader;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
+import com.airhockey.android.util.TextureHelper;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class AirHockeyRenderer implements GLSurfaceView.Renderer {
-    private static final int BYTES_PER_FLOAT = 4;
-
-    private static final int POSITION_COMPONENT_COUNT = 2;
-    private static final int COLOR_COMPONENT_COUNT = 3;
-    private static final int STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT;
-
-    private static final String A_COLOR = "a_Color";
-    private static final String A_POSITION = "a_Position";
-    private static final String U_MATRIX = "u_Matrix";
-
-    private final FloatBuffer verterxData;
-    private final Context mContext;
-    private int program;
-    private int aColorLocation;
-    private int aPositionLocation;
-    private int uMatrixLocation;
+    private final Context context;
 
     private final float[] projectionMatrix = new float[16];
     private final float[] modelMatrix = new float[16];
-    private final float[] tableVerticesWithTriangles = {
-            // Order of coordinates: X, Y, R, G, B
-            // Triangle Fan
-            0f, 0f, 1f, 1f, 1f,
-            -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-            0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-            0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-            -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-            -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
 
-            // Line 1
-            -0.5f, 0f, 1f, 0f, 0f,
-            0.5f, 0f, 1f, 0f, 0f,
+    private Table table;
+    private Mallet mallet;
 
-            // Mallets
-            0f, -0.4f, 0f, 0f, 1f,
-            0f, 0.4f, 1f, 0f, 0f
-    };
+    private TextureShaderProgram textureProgram;
+    private ColorShaderProgram colorProgram;
+
+    private int texture;
 
     public AirHockeyRenderer(Context context) {
-        this.mContext = context;
-        this.verterxData = ByteBuffer
-                .allocateDirect(tableVerticesWithTriangles.length * BYTES_PER_FLOAT)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        verterxData.put(tableVerticesWithTriangles);
+        this.context = context;
     }
 
     @Override
-    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+    public void onSurfaceCreated(GL10 glUnused, EGLConfig config) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        String vertexShaderSource = TextResourceReader
-                .readTextFileFromResource(mContext, R.raw.simple_vertex_shader);
-        String fragmentShaderSource = TextResourceReader
-                .readTextFileFromResource(mContext, R.raw.simple_fragment_shader);
-        int vertexShader = ShaderHelper.compileVertexShader(vertexShaderSource);
-        int fragmentShader = ShaderHelper.compileFragmentShader(fragmentShaderSource);
-        int program = ShaderHelper.linkProgram(vertexShader, fragmentShader);
 
-        if (BuildConfig.DEBUG) {
-            ShaderHelper.validateProgram(program);
-        }
+        table = new Table();
+        mallet = new Mallet();
 
-        GLES20.glUseProgram(program);
+        textureProgram = new TextureShaderProgram(context);
+        colorProgram = new ColorShaderProgram(context);
 
-        aColorLocation = GLES20.glGetAttribLocation(program, A_COLOR);
-        aPositionLocation = GLES20.glGetAttribLocation(program, A_POSITION);
-        uMatrixLocation = GLES20.glGetUniformLocation(program, U_MATRIX);
-
-        verterxData.position(0);
-        GLES20.glVertexAttribPointer(aPositionLocation, POSITION_COMPONENT_COUNT,
-                GLES20.GL_FLOAT, false, STRIDE, verterxData);
-        GLES20.glEnableVertexAttribArray(aPositionLocation);
-
-        verterxData.position(POSITION_COMPONENT_COUNT);
-        GLES20.glVertexAttribPointer(aColorLocation, COLOR_COMPONENT_COUNT,
-                GLES20.GL_FLOAT, false, STRIDE, verterxData);
-        GLES20.glEnableVertexAttribArray(aColorLocation);
+        texture = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface);
     }
 
     @Override
-    public void onSurfaceChanged(GL10 gl, int width, int height) {
-        // Set the OpengGL viewport to fill the entire surface.
+    public void onSurfaceChanged(GL10 glUnused, int width, int height) {
+        // Set the OpenGL viewport to fill the entire surface.
         GLES20.glViewport(0, 0, width, height);
 
-        MatrixHelper.perspectiveM(projectionMatrix, 45,
-                (float) width / (float) height, 1f, 10f);
+        MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width
+                / (float) height, 1f, 10f);
 
         Matrix.setIdentityM(modelMatrix, 0);
         Matrix.translateM(modelMatrix, 0, 0f, 0f, -2.5f);
@@ -114,22 +64,20 @@ public class AirHockeyRenderer implements GLSurfaceView.Renderer {
     }
 
     @Override
-    public void onDrawFrame(GL10 gl) {
+    public void onDrawFrame(GL10 glUnused) {
         // Clear the rendering surface.
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        // Apply Projection matrix.
-        GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0);
 
-        // Draw board.
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, 6);
+        // Draw the table.
+        textureProgram.useProgram();
+        textureProgram.setUniforms(projectionMatrix, texture);
+        table.bindData(textureProgram);
+        table.draw();
 
-        // Draw crossing line.
-        GLES20.glDrawArrays(GLES20.GL_LINES, 6, 2);
-
-        // Draw the first mallet blue.
-        GLES20.glDrawArrays(GLES20.GL_POINTS, 8, 1);
-
-        // Draw the second mallet red.
-        GLES20.glDrawArrays(GLES20.GL_POINTS, 9, 1);
+        // Draw the mallets.
+        colorProgram.useProgram();
+        colorProgram.setUniforms(projectionMatrix);
+        mallet.bindData(colorProgram);
+        mallet.draw();
     }
 }

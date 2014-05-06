@@ -2,6 +2,8 @@ package com.airhockey.android.util;
 
 import android.opengl.GLES20;
 
+import com.airhockey.android.BuildConfig;
+
 import static com.airhockey.android.util.LogUtils.LOGI;
 import static com.airhockey.android.util.LogUtils.LOGV;
 import static com.airhockey.android.util.LogUtils.LOGW;
@@ -11,6 +13,23 @@ public class ShaderHelper {
     private static final String TAG = makeLogTag(ShaderHelper.class);
 
     private ShaderHelper() {
+    }
+
+    public static int buildProgram(String vertexShaderSource, String fragmentShaderSource) {
+        int program;
+
+        // Compile shaders.
+        int vertexShader = compileVertexShader(vertexShaderSource);
+        int fragmentShader = compileFragmentShader(fragmentShaderSource);
+
+        // Link them into a shader program.
+        program = linkProgram(vertexShader, fragmentShader);
+
+        if (BuildConfig.DEBUG) {
+            validateProgram(program);
+        }
+
+        return program;
     }
 
     /**
