@@ -1,0 +1,46 @@
+package com.airhockey.android.util;
+
+public class Geometry {
+    private Geometry() {
+    }
+
+    public static class Point {
+        public final float x, y, z;
+
+        public Point(float x, float y, float z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public Point translateY(float distance) {
+            return new Point(x, y + distance, z);
+        }
+    }
+
+    public static class Circle {
+        public final Point center;
+        public final float radius;
+
+        public Circle(Point center, float radius) {
+            this.radius = radius;
+            this.center = center;
+        }
+
+        public Circle scale(float scale) {
+            return new Circle(center, radius * scale);
+        }
+    }
+
+    public static class Cylinder {
+        public final float height;
+        public final float radius;
+        public final Point center;
+
+        public Cylinder(Point center, float radius, float height) {
+            this.height = height;
+            this.radius = radius;
+            this.center = center;
+        }
+    }
+}
